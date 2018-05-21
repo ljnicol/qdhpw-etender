@@ -1,25 +1,27 @@
 # This is a template for a Ruby scraper on morph.io (https://morph.io)
 # including some code snippets below that you should find helpful
 
-# require 'scraperwiki'
-# require 'mechanize'
-#
-# agent = Mechanize.new
-#
-# # Read in a page
-# page = agent.get("http://foo.com")
-#
-# # Find somehing on the page using css selectors
-# p page.at('div.content')
-#
-# # Write out to the sqlite database using scraperwiki library
-# ScraperWiki.save_sqlite(["name"], {"name" => "susan", "occupation" => "software developer"})
-#
-# # An arbitrary query against the database
-# ScraperWiki.select("* from data where 'name'='peter'")
+require 'scraperwiki'
+require 'mechanize'
 
-# You don't have to do things with the Mechanize or ScraperWiki libraries.
-# You can use whatever gems you want: https://morph.io/documentation/ruby
-# All that matters is that your final data is written to an SQLite database
-# called "data.sqlite" in the current working directory which has at least a table
-# called "data".
+def crawl_page(url)
+  p url
+  agent = Mechanize.new
+  page = agent.get(url)
+  html = Nokogiri::HTML(page.body)
+  t = {}
+  html.xpath("//div[@class='tenderHeaderMid']/table/tr/td").map(&:text).map do |t|
+    t.gsub(/\r|\n|[ ]{2,}/,"")
+  end.each_slice(2) do |pairs|
+    t[(pairs[0].gsub(/\s\:/, ""))] = pairs[1]
+  end
+  p t
+  # [contains(@class, 'tenderHeaderData')]
+end
+
+base_url = 'https://www.hpw.qld.gov.au/bas/eTender/public/TenderDetailsAccepted.aspx?'
+
+(1..5).each do |i|
+  out = crawl_page(base_url + "tid=#{i}")
+end
+
